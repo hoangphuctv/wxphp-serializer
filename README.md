@@ -2,7 +2,7 @@
 Serialize/Unserialize PHP text
 
 
-## 1
+## 1 Serialize by text content
 1. File/Toggle serialize
 
 
