@@ -1,0 +1,140 @@
+<?php
+ini_set('memory_limit', '5G');
+
+class AppConfig {
+    public static $version = "1.0";
+    public static $name = "Serializer";
+}
+
+class MainFrame extends wxFrame
+{
+    public $scite;
+    public $sbar;
+
+    function onQuit()
+    {
+        $this->Destroy();
+    }
+
+    function setStatus($text) {
+        $this->sbar->SetStatusText($text);
+    }
+
+    function alert($text, $title="Message"){
+        $dlg = new wxMessageDialog(
+                $this,
+                $text,
+                $title,
+                wxICON_INFORMATION
+        );
+
+        $dlg->ShowModal();
+    }
+
+    function onAbout($event)
+    {
+        $name = AppConfig::$name;
+        $version = AppConfig::$version;
+        $dlg = new wxMessageDialog(
+                $this,
+                "Welcome to {$name}!\n"
+                    ."Based on wxWidgets 3.0.0\n\n"
+                    ."This is a PHP serialize and unserialize tool!\n"
+                    ."Version: {$version}\n"
+                    ,
+                "About box...",
+                wxICON_INFORMATION
+        );
+
+        $dlg->ShowModal();
+    }
+
+
+    function onSerialize() {
+        $length = $this->scite->GetLength();
+        if ($length == 0) {
+            $this->setStatus("Empty input");
+            return;
+        }
+        $is_file = 0;
+        $filename = '';
+        $text = $this->scite->GetTextRange(0, $this->scite->GetLength());
+        if ($length <= 2048 && is_file($text)) {
+            $this->sbar->SetStatusText("Loading file: " . $text);
+            $filename = $text;
+            $text = file_get_contents($text);
+            $is_file = 1;
+        }
+        $this->sbar->SetStatusText("Unserializing...");
+        $data = @unserialize($text);
+        if ($data !== false) {
+            $text = var_export($data, 1);
+
+        }else {
+            $this->sbar->SetStatusText("Serializing...");
+            eval('$text = '.$text.";");
+            $text = serialize($text);
+        }
+        // if ($str === 'b:0;' || $data !== false) {
+        //     $text = var_export($data, 1);
+        // } else {
+        //     eval('$text = '.$text.";");
+        //     $text = serialize($text);
+        // }
+        if ($is_file) {
+            $filename .= strpos($filename, '.') === false ? '.php' : '';
+            $this->sbar->SetStatusText("Saving file {$filename}...");
+            file_put_contents($filename, $text);
+            $this->sbar->SetStatusText("File saved");
+        }else {
+            $this->scite->SetText($text);
+        }
+        $this->alert("Done");
+    }
+
+    function __construct()
+    {
+         parent::__construct(
+                 null,
+                 null,
+                 AppConfig::$name,
+                 wxDefaultPosition,
+                 new wxSize(500, 500)
+         );
+
+         $mb = new wxMenuBar();
+
+         $mn = new wxMenu();
+         $mn->Append(1, "Toggle &Serialize", "Toggle Serialize");
+         $mn->Append(2, "E&xit", "Quit this program");
+         $mb->Append($mn, "&File");
+
+         $mn = new wxMenu();
+         $mn->AppendCheckItem(4, "&About...", "Show about dialog");
+         $mb->Append($mn, "&Help");
+
+         $this->SetMenuBar($mb);
+
+         $scite = new wxStyledTextCtrl($this);
+         $this->scite = $scite;
+         $this->scite->SetWrapMode(1);
+
+         $sbar = $this->CreateStatusBar(2);
+         $sbar->SetStatusText("Welcome to " . AppConfig::$name);
+         $this->sbar = $sbar;
+
+         $this->Connect(1, wxEVT_COMMAND_MENU_SELECTED, array($this,"onSerialize"));
+         $this->Connect(2, wxEVT_COMMAND_MENU_SELECTED, array($this,"onQuit"));
+         $this->Connect(4, wxEVT_COMMAND_MENU_SELECTED, array($this,"onAbout"));
+    }
+}
+
+try {
+    $mf = new mainFrame();
+    $mf->Show();
+
+    wxEntry();
+}
+catch(Exception $e) {
+    echo "FATAL: Error " . $e->getMessage();
+}
