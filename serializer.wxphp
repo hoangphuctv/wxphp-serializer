@@ -1,7 +1,8 @@
 <?php
 ini_set('memory_limit', '5G');
 
-class AppConfig {
+class AppConfig
+{
     public static $version = "1.0";
     public static $name = "Serializer";
 }
@@ -16,16 +17,18 @@ class MainFrame extends wxFrame
         $this->Destroy();
     }
 
-    function setStatus($text) {
+    function setStatus($text)
+    {
         $this->sbar->SetStatusText($text);
     }
 
-    function alert($text, $title="Message"){
+    function alert($text, $title = "Message")
+    {
         $dlg = new wxMessageDialog(
-                $this,
-                $text,
-                $title,
-                wxICON_INFORMATION
+            $this,
+            $text,
+            $title,
+            wxICON_INFORMATION
         );
 
         $dlg->ShowModal();
@@ -36,21 +39,21 @@ class MainFrame extends wxFrame
         $name = AppConfig::$name;
         $version = AppConfig::$version;
         $dlg = new wxMessageDialog(
-                $this,
-                "Welcome to {$name}!\n"
-                    ."Based on wxWidgets 3.0.0\n\n"
-                    ."This is a PHP serialize and unserialize tool!\n"
-                    ."Version: {$version}\n"
-                    ,
-                "About box...",
-                wxICON_INFORMATION
+            $this,
+            "Welcome to {$name}!\n"
+            . "Based on wxWidgets 3.0.0\n\n"
+            . "This is a PHP serialize and unserialize tool!\n"
+            . "Version: {$version}\n"
+            ,
+            "About box...",
+            wxICON_INFORMATION
         );
 
         $dlg->ShowModal();
     }
 
-
-    function onSerialize() {
+    function onSerialize()
+    {
         $length = $this->scite->GetLength();
         if ($length == 0) {
             $this->setStatus("Empty input");
@@ -67,26 +70,21 @@ class MainFrame extends wxFrame
         }
         $this->sbar->SetStatusText("Unserializing...");
         $data = @unserialize($text);
+
         if ($data !== false) {
             $text = var_export($data, 1);
-
-        }else {
+        } else {
             $this->sbar->SetStatusText("Serializing...");
-            eval('$text = '.$text.";");
+            eval('$text = ' . $text . ";");
             $text = serialize($text);
         }
-        // if ($str === 'b:0;' || $data !== false) {
-        //     $text = var_export($data, 1);
-        // } else {
-        //     eval('$text = '.$text.";");
-        //     $text = serialize($text);
-        // }
+
         if ($is_file) {
             $filename .= strpos($filename, '.') === false ? '.php' : '';
             $this->sbar->SetStatusText("Saving file {$filename}...");
             file_put_contents($filename, $text);
             $this->sbar->SetStatusText("File saved");
-        }else {
+        } else {
             $this->scite->SetText($text);
         }
         $this->alert("Done");
@@ -94,38 +92,96 @@ class MainFrame extends wxFrame
 
     function __construct()
     {
-         parent::__construct(
-                 null,
-                 null,
-                 AppConfig::$name,
-                 wxDefaultPosition,
-                 new wxSize(500, 500)
-         );
+        parent::__construct(
+            null,
+            null,
+            AppConfig::$name,
+            wxDefaultPosition,
+            new wxSize(500, 500)
+        );
 
-         $mb = new wxMenuBar();
+        $mb = new wxMenuBar();
 
-         $mn = new wxMenu();
-         $mn->Append(1, "Toggle &Serialize", "Toggle Serialize");
-         $mn->Append(2, "E&xit", "Quit this program");
-         $mb->Append($mn, "&File");
+        $mn = new wxMenu();
+        $mn->Append(1, "Toggle &Serialize", "Toggle Serialize");
+        $mn->Append(2, "E&xit", "Quit this program");
+        $mb->Append($mn, "&File");
 
-         $mn = new wxMenu();
-         $mn->AppendCheckItem(4, "&About...", "Show about dialog");
-         $mb->Append($mn, "&Help");
+        $mn = new wxMenu();
+        $mn->AppendCheckItem(4, "&About...", "Show about dialog");
+        $mb->Append($mn, "&Help");
 
-         $this->SetMenuBar($mb);
+        $this->SetMenuBar($mb);
 
-         $scite = new wxStyledTextCtrl($this);
-         $this->scite = $scite;
-         $this->scite->SetWrapMode(1);
+        $this->scite = new wxStyledTextCtrl($this);
+        $this->scite->SetWrapMode(1);
 
-         $sbar = $this->CreateStatusBar(2);
-         $sbar->SetStatusText("Welcome to " . AppConfig::$name);
-         $this->sbar = $sbar;
 
-         $this->Connect(1, wxEVT_COMMAND_MENU_SELECTED, array($this,"onSerialize"));
-         $this->Connect(2, wxEVT_COMMAND_MENU_SELECTED, array($this,"onQuit"));
-         $this->Connect(4, wxEVT_COMMAND_MENU_SELECTED, array($this,"onAbout"));
+        $this->scite->StyleClearAll();
+
+        $this->scite->SetMarginWidth(0, 50);
+        $this->scite->StyleSetForeground(
+            wxSTC_STYLE_LINENUMBER, new wxColour (75, 75, 75)
+        );
+        $this->scite->StyleSetBackground(
+            wxSTC_STYLE_LINENUMBER, new wxColour (220, 220, 220)
+        );
+        $this->scite->SetMarginType(0, wxSTC_MARGIN_NUMBER);
+
+        $this->scite->SetWrapMode(wxSTC_WRAP_WORD);
+
+        $this->scite->SetStyleBits(7);
+
+        $this->scite->SetLexer(wxSTC_LEX_PHPSCRIPT);
+
+        $this->scite->StyleSetForeground(
+            wxSTC_HPHP_DEFAULT,
+            new wxColour(0, 0, 0)
+        );
+        $this->scite->StyleSetForeground(
+            wxSTC_HPHP_HSTRING,
+            new wxColour(255, 0, 0)
+        );
+        $this->scite->StyleSetForeground(
+            wxSTC_HPHP_SIMPLESTRING,
+            new wxColour(255, 0, 0)
+        );
+        $this->scite->StyleSetForeground(
+            wxSTC_HPHP_WORD,
+            new wxColour(0, 0, 155)
+        );
+        $this->scite->StyleSetForeground(
+            wxSTC_HPHP_NUMBER,
+            new wxColour(0, 150, 0)
+        );
+        $this->scite->StyleSetForeground(
+            wxSTC_HPHP_VARIABLE,
+            new wxColour(0, 0, 150)
+        );
+        $this->scite->StyleSetForeground(
+            wxSTC_HPHP_COMMENT,
+            new wxColour(150, 150, 150)
+        );
+        $this->scite->StyleSetForeground(
+            wxSTC_HPHP_COMMENTLINE,
+            new wxColour(150, 150, 150)
+        );
+        $this->scite->StyleSetForeground(
+            wxSTC_HPHP_HSTRING_VARIABLE,
+            new wxColour(0, 0, 150)
+        );
+        $this->scite->StyleSetForeground(
+            wxSTC_HPHP_OPERATOR,
+            new wxColour(0, 150, 0)
+        );
+
+        $sbar = $this->CreateStatusBar(2);
+        $sbar->SetStatusText("Welcome to " . AppConfig::$name);
+        $this->sbar = $sbar;
+
+        $this->Connect(1, wxEVT_COMMAND_MENU_SELECTED, array($this, "onSerialize"));
+        $this->Connect(2, wxEVT_COMMAND_MENU_SELECTED, array($this, "onQuit"));
+        $this->Connect(4, wxEVT_COMMAND_MENU_SELECTED, array($this, "onAbout"));
     }
 }
 
@@ -134,7 +190,6 @@ try {
     $mf->Show();
 
     wxEntry();
-}
-catch(Exception $e) {
+} catch (Exception $e) {
     echo "FATAL: Error " . $e->getMessage();
 }
